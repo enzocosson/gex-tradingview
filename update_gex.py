@@ -1,17 +1,19 @@
 """
 Script de mise à jour des niveaux GEX pour TradingView
-Génère UNIQUEMENT les CSV
+Génère des CSV au format Pine Seeds (OHLCV + timestamp)
 """
 import requests
 import pandas as pd
-from datetime import datetime
+from datetime import datetime, timezone
 import sys
 from config import *
+
 
 def log(message):
     """Logger simple"""
     timestamp = datetime.now().strftime('%H:%M:%S')
     print(f"[{timestamp}] {message}")
+
 
 def fetch_gex_data(ticker, aggregation='full'):
     """Récupère les données GEX"""
@@ -25,6 +27,7 @@ def fetch_gex_data(ticker, aggregation='full'):
     except Exception as e:
         log(f"❌ Erreur {ticker}/{aggregation}: {e}")
         return None
+
 
 def convert_to_futures(source_ticker, gex_data):
     """Convertit SPX/NDX en ES/NQ"""
@@ -172,10 +175,42 @@ def convert_to_futures(source_ticker, gex_data):
     log(f"✅ {target}: {len(levels)} niveaux générés")
     return levels
 
+
+def convert_to_pine_seeds_format(levels, timestamp):
+    """
+    Convertit les niveaux GEX au format Pine Seeds OHLCV
+    Format requis: date,open,high,low,close,volume (sans en-tête)
+    date: YYYYMMDDT (ex: 20251225T)
+    Pour une seule valeur par jour: open=high=low=close=strike
+    """
+    pine_rows = []
+    
+    # Format de date Pine Seeds: YYYYMMDDT
+    date_str = timestamp.strftime('%Y%m%dT')
+    
+    for level in levels:
+        strike = level['strike']
+        
+        # Pine Seeds: si une seule valeur, utiliser la même pour OHLC
+        # Volume = importance (6-10)
+        pine_rows.append({
+            'date': date_str,
+            'open': strike,
+            'high': strike,
+            'low': strike,
+            'close': strike,
+            'volume': level['importance']
+        })
+    
+    return pine_rows
+
+
 def main():
-    timestamp = datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S UTC')
+    timestamp = datetime.now(timezone.utc)
+    timestamp_str = timestamp.strftime('%Y-%m-%d %H:%M:%S UTC')
+    
     log("=" * 60)
-    log(f"🚀 DÉMARRAGE MISE À JOUR GEX - {timestamp}")
+    log(f"🚀 DÉMARRAGE MISE À JOUR GEX - {timestamp_str}")
     log("=" * 60)
     
     if not API_KEY:
@@ -199,27 +234,53 @@ def main():
             levels = convert_to_futures(source_ticker, gex_data)
             
             if levels:
-                df = pd.DataFrame(levels)
-                df = df.sort_values(['importance', 'strike'], ascending=[False, True])
-                df = df.drop_duplicates(subset=['strike'], keep='first')
+                # Trier et dédupliquer
+                df_levels = pd.DataFrame(levels)
+                df_levels = df_levels.sort_values(['importance', 'strike'], ascending=[False, True])
+                df_levels = df_levels.drop_duplicates(subset=['strike'], keep='first')
                 
+                # Convertir au format Pine Seeds
+                pine_data = convert_to_pine_seeds_format(
+                    df_levels.to_dict('records'), 
+                    timestamp
+                )
+                
+                # Créer DataFrame Pine Seeds
+                df_pine = pd.DataFrame(pine_data)
+                
+                # Sauvegarder SANS en-tête (requis par Pine Seeds)
                 output_file = OUTPUT_FILES[config['target']]
-                df.to_csv(output_file, index=False)
-                log(f"✅ Fichier sauvegardé: {output_file} ({len(df)} niveaux)")
+                df_pine.to_csv(
+                    output_file, 
+                    index=False, 
+                    header=False,  # ⚠️ CRITIQUE: Pas d'en-tête pour Pine Seeds
+                    float_format='%.2f'
+                )
+                
+                log(f"✅ Fichier Pine Seeds: {output_file} ({len(df_pine)} lignes)")
+                log(f"   Format: date,open,high,low,close,volume")
+                
+                # Sauvegarder aussi la version lisible pour debug
+                debug_file = output_file.replace('.csv', '_metadata.csv')
+                df_levels.to_csv(debug_file, index=False)
+                log(f"   Debug: {debug_file}")
+                
                 success_count += 1
             else:
                 log(f"⚠️  Aucun niveau pour {config['target']}")
         else:
             log(f"❌ Erreur {config['target']}")
     
+    # Timestamp
     with open(OUTPUT_FILES['TIMESTAMP'], 'w') as f:
-        f.write(timestamp)
+        f.write(timestamp_str)
     
     log("\n" + "=" * 60)
     log(f"✅ TERMINÉ - {success_count}/{len(TICKERS)} succès")
     log("=" * 60)
     
     sys.exit(0 if success_count > 0 else 1)
+
 
 if __name__ == '__main__':
     try:
