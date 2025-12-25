@@ -29,6 +29,9 @@ OUTPUT_FILES = {
     'TIMESTAMP': 'last_update.txt'
 }
 
-# Filtres
-TOP_STRIKES_COUNT = 15
+# Paramètres
+TOP_STRIKES_COUNT = 15  # Top N strikes par importance
 API_TIMEOUT = 15
+
+# Aggregation par défaut (zero, one, full)
+DEFAULT_AGGREGATION = 'full'  # 'full' = toutes expirations 0-90j

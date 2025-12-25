@@ -1,0 +1,179 @@
+// @version=5
+// GEX Levels Indicator
+// Affiche les niveaux GEX fournis via un champ texte CSV collé dans les paramètres.
+// Usage:
+// - Générez les niveaux via `update_gex.py` et ouvrez `es_gex_levels.csv` ou `nq_gex_levels.csv`.
+// - Copiez les lignes voulues dans le paramètre "Levels CSV" ci-dessous.
+// - Format attendu (par ligne, séparé par virgule):
+//     strike,gex_vol,gex_oi,type,importance,label
+//   Exemples
+//     6932.05,100,50,support,9,Major Support (Vol)
+//     6935.00,-200,30,resistance,8,Major Resistance (OI)
+//   Seuls le champ `strike` est strictement requis. Les autres champs sont optionnels.
+
+indicator("GEX Levels (paste CSV)", overlay=true, max_lines_count=100, max_labels_count=100)
+
+// ----- Inputs -----
+levels_csv = input.string(title="Levels CSV (one per line)", defval="", tooltip="Paste CSV lines here: strike,gex_vol,gex_oi,type,importance,label")
+multiplier = input.float(title="Price multiplier (set 1 for futures)", defval=1.0, minval=0.0001, step=0.01)
+show_labels = input.bool(true, title="Show labels")
+line_width = input.int(2, title="Line width", minval=1, maxval=6)
+line_style_opt = input.string(defval="solid", title="Line style", options=["solid","dashed","dotted"])
+alpha_pct = input.int(20, title="Line transparency (%)", minval=0, maxval=100)
+left_extend = input.int(500, title="Extend left bars", minval=1, maxval=5000)
+right_extend = input.int(500, title="Extend right bars", minval=1, maxval=5000)
+
+// ----- Helpers -----
+f_try_parse(s) =>
+    float float_val = na
+    // remove spaces
+    s2 = str.trim(s)
+    if s2 == ""
+        [false, float_val]
+    else
+        // try replace possible comma decimals
+        s3 = str.replace(s2, " ", "")
+        // handle thousand separators
+        s3 = str.replace(s3, ",", "")
+        val = str.tonumber(s3)
+        [not na(val), val]
+
+// parse CSV line into fields
+parse_line(line) =>
+    // ignore comments
+    l = str.trim(line)
+    if l == "" or str.startswith(l, "#")
+        [false, na, na, na, na, ""]
+    else
+        parts = str.split(l, ",")
+        // ensure at least 1 part
+        p0 = parts[0]
+        ok, strike = f_try_parse(p0)
+        if not ok
+            [false, na, na, na, na, ""]
+        else
+            // default values (declare types explicitly)
+            float gex_vol = na
+            float gex_oi = na
+            string typ = ""
+            float importance = na
+            string label_text = ""
+            if array.size(parts) > 1
+                ok2, v = f_try_parse(parts[1])
+                if ok2
+                    gex_vol := v
+                else
+                    // maybe the second is a type or label; ignore
+                    gex_vol := na
+            if array.size(parts) > 2
+                ok3, v2 = f_try_parse(parts[2])
+                if ok3
+                    gex_oi := v2
+            if array.size(parts) > 3
+                typ := str.trim(parts[3])
+            if array.size(parts) > 4
+                ok4, v4 = f_try_parse(parts[4])
+                if ok4
+                    importance := v4
+            if array.size(parts) > 5
+                // join remaining parts as label
+                // str.join expects (separator, array)
+                label_text := str.trim(str.join(",", array.slice(parts, 5, array.size(parts))))
+            else
+                // if no label provided, use type
+                label_text := typ
+            [true, strike, gex_vol, gex_oi, typ, label_text]
+
+// map style string to line.style
+get_line_style(s) =>
+    s == "dashed" ? line.style_dashed : s == "dotted" ? line.style_dotted : line.style_solid
+
+// color mapping
+type_to_color(t) =>
+    t_lower = str.lower(str.trim(t))
+    t_lower == "support" ? color.new(color.green, alpha_pct) :
+    t_lower == "resistance" ? color.new(color.red, alpha_pct) :
+    t_lower == "hotspot" ? color.new(color.yellow, alpha_pct) :
+    t_lower == "zero_gamma" ? color.new(color.blue, alpha_pct) : color.new(color.gray, alpha_pct)
+
+// ----- Parse CSV -----
+lines = str.split(levels_csv, "\n")
+parsed_count = 0
+var float[] prices = array.new_float()
+var string[] labels = array.new_string()
+var string[] types = array.new_string()
+var float[] importances = array.new_float()
+
+// clear arrays
+if barstate.isfirst
+    array.clear(prices)
+    array.clear(labels)
+    array.clear(types)
+    array.clear(importances)
+
+for i = 0 to array.size(lines) - 1
+    line = array.get(lines, i)
+    ok, strike, gex_vol, gex_oi, typ, label_text = parse_line(line)
+    if ok
+        // apply multiplier
+        price = strike / multiplier
+        array.push(prices, price)
+        array.push(labels, label_text)
+        array.push(types, typ)
+        array.push(importances, na)
+        parsed_count += 1
+
+// limit count
+max_levels = 50
+if array.size(prices) > max_levels
+    // trim to first max_levels
+    // create temp arrays
+    tmp_p = array.new_float()
+    tmp_l = array.new_string()
+    tmp_t = array.new_string()
+    for i = 0 to max_levels - 1
+        array.push(tmp_p, array.get(prices, i))
+        array.push(tmp_l, array.get(labels, i))
+        array.push(tmp_t, array.get(types, i))
+    array.clear(prices)
+    array.clear(labels)
+    array.clear(types)
+    for i = 0 to array.size(tmp_p) - 1
+        array.push(prices, array.get(tmp_p, i))
+        array.push(labels, array.get(tmp_l, i))
+        array.push(types, array.get(tmp_t, i))
+
+// ----- Draw lines (only on last bar) -----
+var line[] drawn_lines = array.new_line()
+var label[] drawn_labels = array.new_label()
+if barstate.islast
+    // clear previous drawings
+    for i = 0 to array.size(drawn_lines) - 1
+        ln = array.get(drawn_lines, i)
+        line.delete(ln)
+    for i = 0 to array.size(drawn_labels) - 1
+        lb = array.get(drawn_labels, i)
+        label.delete(lb)
+    array.clear(drawn_lines)
+    array.clear(drawn_labels)
+
+    n = array.size(prices)
+    for i = 0 to n - 1
+        p = array.get(prices, i)
+        t = array.get(types, i)
+        lab = array.get(labels, i)
+        col = type_to_color(t)
+        lstyle = get_line_style(line_style_opt)
+        x1 = bar_index - left_extend
+        x2 = bar_index + right_extend
+        ln = line.new(x1, p, x2, p, xloc.bar_index, extend=extend.none, color=col, width=line_width, style=lstyle)
+        array.push(drawn_lines, ln)
+        if show_labels
+            txt = lab == "" ? str.tostring(p) : str.format("{0} @ {1}", lab, str.tostring(p))
+            lb = label.new(x2, p, text=txt, xloc=xloc.bar_index, yloc=yloc.price, style=label.style_label_left, color=col, textcolor=color.black)
+            array.push(drawn_labels, lb)
+
+// Optionally show count
+plotchar(parsed_count, title="Parsed levels", location=location.top, char='•', size=size.tiny, color=color.white)
+
+// End of script
