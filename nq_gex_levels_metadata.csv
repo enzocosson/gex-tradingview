@@ -1,17 +1,17 @@
 strike,type,importance,label
-25525,zero_gamma,10,Zero Gamma
-25500,resistance,9,Major Resistance (Vol)
-25700,support,9,Major Support (Vol)
-25250,support,8,Major Support (OI)
-25450,resistance,8,Major Resistance (OI)
-25300,resistance,7,Resistance
-25350,resistance,7,Resistance
-25510,resistance,7,Resistance
-25600,support,7,Support
-25620,support,7,Support
-25630,support,7,Support
-25640,support,7,Support
-25650,support,7,Support
-25800,support,7,Support
-25900,support,7,Support
-26000,support,7,Support
+25494.1,zero_gamma,10,Zero Gamma
+25480.0,resistance,9,Major Resistance (Vol)
+25570.0,support,9,Major Support (Vol)
+25250.0,support,8,Major Support (OI)
+25450.0,resistance,8,Major Resistance (OI)
+25500.0,support,7,Support
+25540.0,support,7,Support
+25550.0,support,7,Support
+25600.0,support,7,Support
+25620.0,support,7,Support
+25630.0,support,7,Support
+25640.0,support,7,Support
+25650.0,support,7,Support
+25690.0,support,7,Support
+25700.0,support,7,Support
+26000.0,support,7,Support
