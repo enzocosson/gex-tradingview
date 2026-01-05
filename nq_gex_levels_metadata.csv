@@ -1,18 +1,19 @@
 strike,type,importance,label
-25425.25,zero_gamma,10,Zero Gamma
-25400.0,resistance,9,Major Resistance (Vol)
-25480.0,support,9,Major Support (Vol)
-25130.0,resistance,8,Major Resistance (OI)
-25250.0,support,8,Major Support (OI)
-25470.0,support,7,Support
-25500.0,support,7,Support
-25510.0,support,7,Support
-25520.0,support,7,Support
-25540.0,support,7,Support
-25550.0,support,7,Support
-25560.0,support,7,Support
-25570.0,support,7,Support
-25600.0,support,7,Support
-25610.0,support,7,Support
-25630.0,support,7,Support
-25650.0,support,7,Support
+25475,zero_gamma,10,Zero Gamma
+25400,resistance,9,Major Resistance (Vol)
+25480,support,9,Major Support (Vol)
+25250,support,8,Major Support (OI)
+25450,resistance,8,Major Resistance (OI)
+25300,resistance,7,Resistance
+25470,support,7,Support
+25490,support,7,Support
+25500,support,7,Support
+25510,support,7,Support
+25520,support,7,Support
+25540,support,7,Support
+25550,support,7,Support
+25560,support,7,Support
+25570,support,7,Support
+25600,support,7,Support
+25610,support,7,Support
+25640,hotspot,6,Hotspot 10min
