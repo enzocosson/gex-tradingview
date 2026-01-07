@@ -1,19 +1,17 @@
 strike,type,importance,label
-6944.43,zero_gamma,10,Zero Gamma
-6939.92,support,9,Major Support (Vol)
-6945.0,resistance,9,Major Resistance (Vol)
-6750.0,resistance,8,Major Resistance (OI)
-6920.0,support,7,Support
-6925.0,support,7,Support
-6930.0,support,7,Support
-6935.0,support,7,Support
-6940.0,support,7,Support
-6950.0,support,7,Support
-6955.0,support,7,Support
-6960.0,support,7,Support
-6965.0,support,7,Support
-6970.0,support,7,Support
-6975.0,support,7,Support
-6980.0,support,7,Support
-6985.0,support,7,Support
-7000.0,support,7,Support
+6750,resistance,8,Major Resistance (OI)
+7000,support,8,Major Support (OI)
+6945,support,7,Support
+6950,support,7,Support
+6960,support,7,Support
+6965,support,7,Support
+6970,support,7,Support
+6975,support,7,Support
+6980,support,7,Support
+6985,support,7,Support
+6990,support,7,Support
+6995,support,7,Support
+7025,support,7,Support
+7050,support,7,Support
+7100,support,7,Support
+7150,support,7,Support
