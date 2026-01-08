@@ -3,6 +3,7 @@ strike,type,importance,label
 6900.0,resistance,9,Major Resistance (Vol)
 6940.0,support,9,Major Support (Vol)
 7000.0,support,8,Major Support (OI)
+6880.0,resistance,7,Resistance
 6890.0,resistance,7,Resistance
 6895.0,resistance,7,Resistance
 6905.0,resistance,7,Resistance
@@ -14,4 +15,3 @@ strike,type,importance,label
 6945.0,support,7,Support
 6950.0,support,7,Support
 6955.0,support,7,Support
-6960.0,support,7,Support
